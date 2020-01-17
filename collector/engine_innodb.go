@@ -71,6 +71,8 @@ func (ScrapeEngineInnodbStatus) Scrape(ctx context.Context, db *sql.DB, ch chan<
 	// 0 read views open inside InnoDB
 	rQueries, _ := regexp.Compile(`(\d+) queries inside InnoDB, (\d+) queries in queue`)
 	rViews, _ := regexp.Compile(`(\d+) read views open inside InnoDB`)
+	logSequenceNumber, _ := regexp.Compile(`Log sequence number\s+(\d+)`)
+	lastCheckpointAt, _ := regexp.Compile(`Last checkpoint at\s+(\d+)`)
 
 	for _, line := range strings.Split(statusCol, "\n") {
 		if data := rQueries.FindStringSubmatch(line); data != nil {
@@ -90,6 +92,20 @@ func (ScrapeEngineInnodbStatus) Scrape(ctx context.Context, db *sql.DB, ch chan<
 			value, _ := strconv.ParseFloat(data[1], 64)
 			ch <- prometheus.MustNewConstMetric(
 				newDesc(innodb, "read_views_open_inside_innodb", "Read views open inside InnoDB."),
+				prometheus.GaugeValue,
+				value,
+			)
+		}else if data := logSequenceNumber.FindStringSubmatch(line); data != nil {
+			value, _ := strconv.ParseFloat(data[1], 64)
+			ch <- prometheus.MustNewConstMetric(
+				newDesc(innodb, "log_sequence_number", "Current log sequence number."),
+				prometheus.GaugeValue,
+				value,
+			)
+		}else if data := lastCheckpointAt.FindStringSubmatch(line); data != nil {
+			value, _ := strconv.ParseFloat(data[1], 64)
+			ch <- prometheus.MustNewConstMetric(
+				newDesc(innodb, "last_checkpoint_at", "Last checkpoint at."),
 				prometheus.GaugeValue,
 				value,
 			)
