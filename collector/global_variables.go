@@ -153,6 +153,9 @@ func (ScrapeGlobalVariables) Scrape(ctx context.Context, db *sql.DB, ch chan<- p
 		"version_comment":        "",
 		"wsrep_cluster_name":     "",
 		"wsrep_provider_options": "",
+		"server_uuid":            "",
+		"character_set_server":   "",
+		"collation_server":       "",
 	}
 
 	for globalVariablesRows.Next() {
@@ -184,6 +187,13 @@ func (ScrapeGlobalVariables) Scrape(ctx context.Context, db *sql.DB, ch chan<- p
 		prometheus.NewDesc(prometheus.BuildFQName(namespace, "version", "info"), "MySQL version and distribution.",
 			[]string{"innodb_version", "version", "version_comment"}, nil),
 		prometheus.GaugeValue, 1, textItems["innodb_version"], textItems["version"], textItems["version_comment"],
+	)
+
+	// mysql_server_info metric.
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(prometheus.BuildFQName(namespace, "server", "info"), "MySQL uuid, charset, collation.",
+			[]string{"uuid", "charset", "collation"}, nil),
+		prometheus.GaugeValue, 1, textItems["server_uuid"], textItems["character_set_server"], textItems["collation_server"],
 	)
 
 	// mysql_galera_variables_info metric.
